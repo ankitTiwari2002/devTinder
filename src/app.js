@@ -57,18 +57,31 @@ app.delete("/user", async (req, res) => {
 });
 
 //update user in database
-app.patch("/user", async (req, res) => {
-  const _id = req.body.userId;
+app.patch("/user/:userId", async (req, res) => {
+  const _id = req.params?.userId;
   const data = req.body;
+
   try {
-    const user = await User.findByIdAndUpdate(_id, data);
+    const updateAllowed = ["age", "gender", "photourl", "skills"];
+    const isUpdateAllowed = Object.keys(data).every((k) =>
+      updateAllowed.includes(k)
+    );
+    if (!isUpdateAllowed) {
+      throw new Error("update not possible");
+    }
+    if (data.skills.length > 10) {
+      throw new Error("skills can't be more then 10");
+    }
+    const user = await User.findByIdAndUpdate(_id, data, {
+      runValidators: true,
+    });
     if (!user) {
       res.status(404).send("user not exist");
     } else {
       res.send("user updated succesfully");
     }
   } catch (err) {
-    res.status(400).send("something went wrong");
+    res.status(400).send("UPDATE FAILED: " + err.message);
   }
 });
 
