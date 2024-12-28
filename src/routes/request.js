@@ -64,4 +64,40 @@ requestRouter.post(
   }
 );
 
+// recive connection request
+requestRouter.post(
+  "/request/review/:status/:requestId",
+  userAuth,
+  async (req, res) => {
+    try {
+      const loggedInUser = req.user;
+      const { status, requestId } = req.params;
+
+      const allowedStatus = ["accepted", "rejected"];
+      //check if status is right or not
+      if (!allowedStatus.includes(status)) {
+        res.status(400).json({ message: "Invalid status type" });
+      }
+
+      // validate the request id
+      const connectionRequest = await connectionRequestModal.findOne({
+        fromUserId: requestId,
+        toUserId: loggedInUser._id,
+        status: "intrested",
+      });
+
+      if (!connectionRequest) {
+        res.status(404).json({ message: "user not found" });
+      }
+
+      connectionRequest.status = status;
+
+      const data = await connectionRequest.save();
+      res.json({ message: "connection request is: " + status, data });
+    } catch (err) {
+      res.status(400).send("Error: " + err.message);
+    }
+  }
+);
+
 module.exports = requestRouter;
